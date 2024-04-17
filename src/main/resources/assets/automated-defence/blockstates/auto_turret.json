@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "automated-defence:block/auto_turret" }
+  }
+}
