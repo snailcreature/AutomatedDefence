@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityT
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockWithEntity;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemGroup;
@@ -29,7 +30,7 @@ public class AutomatedDefence implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	public static final AutoTurret AUTO_TURRET =
-			new AutoTurret(AbstractBlock.Settings.create().strength(4.0f));
+			new AutoTurret(AbstractBlock.Settings.create().strength(4.0f).hardness(Blocks.DISPENSER.getHardness()).requiresTool());
 	public static final BlockEntityType<AutoTurretBlockEntity> AUTO_TURRET_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, new Identifier(MOD_ID, "auto_turret_block_entity"), FabricBlockEntityTypeBuilder.create(AutoTurretBlockEntity::new, AUTO_TURRET).build());
 
 	private static final ItemGroup ITEM_GROUP = FabricItemGroup.builder()

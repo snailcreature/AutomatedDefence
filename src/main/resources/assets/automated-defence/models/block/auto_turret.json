@@ -2,7 +2,8 @@
 	"credit": "Made with Blockbench",
 	"textures": {
 		"stone": "minecraft:block/smooth_stone",
-		"wood": "minecraft:block/oak_planks"
+		"wood": "minecraft:block/oak_planks",
+		"particle": "minecraft:block/stone"
 	},
 	"elements": [
 		{
