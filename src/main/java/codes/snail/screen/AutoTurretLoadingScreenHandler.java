@@ -1,10 +1,13 @@
 package codes.snail.screen;
 
+import net.fabricmc.fabric.api.tag.convention.v1.ConventionalItemTags;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 
@@ -24,25 +27,40 @@ public class AutoTurretLoadingScreenHandler extends ScreenHandler {
         super(AUTO_TURRET_LOADING_SCREEN_HANDLER, syncId);
         this.inventory = inventory;
         inventory.onOpen(playerInventory.player);
-
         // BOW_SLOT
-        this.addSlot(new Slot(inventory, 0, 44, 18));
+        this.addSlot(new Slot(inventory, 0, 44, 18) {
+            @Override
+            public boolean canInsert(ItemStack stack) {
+                return stack.isIn(ConventionalItemTags.BOWS);
+            }
+        });
         // ENCHANTMENT_SLOT
-        this.addSlot(new Slot(inventory, 1, 44, 54));
+        this.addSlot(new Slot(inventory, 1, 44, 54) {
+            @Override
+            public boolean canInsert(ItemStack stack) {
+                return stack.isOf(Items.ENCHANTED_BOOK);
+            }
+        });
 
         int m;
         int l;
         // Arrow Slots
         for (m = 0; m < 3; m++) {
             for (l = 0; l < 3; l++) {
-                this.addSlot(new Slot(inventory, 2 + m + l*3, 97 + m*18,
-                        17 + l*18));
+                this.addSlot(new Slot(inventory, 2 + l + m*3, 97 + l*18,
+                        17 + m*18) {
+                    @Override
+                    public boolean canInsert(ItemStack stack) {
+                        return stack.isIn(ItemTags.ARROWS);
+                    }
+                });
             }
         }
         // Player inventory
         for (m = 0; m < 3; ++m) {
             for (l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + m * 9 + 9, 8 + l * 18, 84 + m * 18));
+                this.addSlot(new Slot(playerInventory, l + m * 9 + 9,
+                        8 + l * 18, 84 + m * 18));
             }
         }
         // Player hotbar
