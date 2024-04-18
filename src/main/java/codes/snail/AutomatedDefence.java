@@ -2,11 +2,13 @@ package codes.snail;
 
 import codes.snail.block.AutoTurret;
 import codes.snail.block.entity.AutoTurretBlockEntity;
+import codes.snail.screen.AutoTurretLoadingScreenHandler;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.fabricmc.fabric.api.screenhandler.v1.ScreenHandlerRegistry;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockWithEntity;
@@ -17,6 +19,7 @@ import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -32,6 +35,7 @@ public class AutomatedDefence implements ModInitializer {
 	public static final AutoTurret AUTO_TURRET =
 			new AutoTurret(AbstractBlock.Settings.create().strength(4.0f).hardness(Blocks.DISPENSER.getHardness()).requiresTool());
 	public static final BlockEntityType<AutoTurretBlockEntity> AUTO_TURRET_BLOCK_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, new Identifier(MOD_ID, "auto_turret_block_entity"), FabricBlockEntityTypeBuilder.create(AutoTurretBlockEntity::new, AUTO_TURRET).build());
+	public final static ScreenHandlerType<AutoTurretLoadingScreenHandler> AUTO_TURRET_LOADING_SCREEN_HANDLER = ScreenHandlerRegistry.registerSimple(new Identifier(MOD_ID, "auto_turret"), AutoTurretLoadingScreenHandler::new);
 
 	private static final ItemGroup ITEM_GROUP = FabricItemGroup.builder()
 			.icon(() -> new ItemStack(AUTO_TURRET))
