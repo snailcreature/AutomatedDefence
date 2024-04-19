@@ -6,6 +6,8 @@ import codes.snail.screen.AutoTurretLoadingScreenHandler;
 import net.fabricmc.fabric.api.tag.convention.v1.ConventionalItemTags;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -13,6 +15,7 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -40,7 +43,12 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
 
     private static final int BOW_SLOT = 0;
     private static final Vec3d BOW_POS = new Vec3d(0.5, 1.5, 0.5);
+
     private static final int ENCHANT_SLOT = 1;
+    private int POWER;
+    private int PUNCH;
+    private int FLAME;
+    private boolean INFINITY;
 
     private static final Random ARROW_DITHER = Random.create();
 
@@ -67,7 +75,7 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
             markDirty();
         }
 
-        if (hasAmmnunition() && hasBow()) {
+        if (hasAmmunition() && hasBow()) {
             if (TARGET == null) {
                 Random random = Random.create();
                 List<HostileEntity> nearbyEntities =
@@ -85,6 +93,7 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
             }
             LOAD += 1;
             if (LOAD >= FULL_LOAD) {
+                calculateEnchantments();
                 Vec3d velocity =
                         (pos.toCenterPos().add(BOW_POS)
                                 .subtract(TARGET.getX(),
@@ -104,6 +113,9 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
                             pos.getZ() + BOW_POS.getZ());
                     arrow.pickupType = PersistentProjectileEntity.PickupPermission.ALLOWED;
                     arrow.setVelocity(velocity);
+                    if (POWER > 0) arrow.setDamage(arrow.getDamage() + (double)POWER * 0.5 + 0.5);
+                    if (PUNCH > 0) arrow.setPunch(PUNCH);
+                    if (FLAME > 0) arrow.setOnFireFor(100);
                     world.spawnEntity(arrow);
                     arrows.decrement(1);
                 }
@@ -115,8 +127,13 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
                     arrow.initFromStack(arrows);
                     arrow.pickupType = PersistentProjectileEntity.PickupPermission.CREATIVE_ONLY;
                     arrow.setVelocity(velocity);
+                    if (POWER > 0) arrow.setDamage(arrow.getDamage() + (double)POWER * 0.5 + 0.5);
+                    if (PUNCH > 0) arrow.setPunch(PUNCH);
+                    if (FLAME > 0) arrow.setOnFireFor(100);
                     world.spawnEntity(arrow);
-                    arrows.decrement(1);
+                    if (!INFINITY) {
+                        arrows.decrement(1);
+                    }
                 }
                 getStack(BOW_SLOT).damage(1, TARGET, (p) -> {});
                 LOAD = 0;
@@ -137,7 +154,7 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
         return ItemStack.EMPTY;
     }
 
-    private boolean hasAmmnunition() {
+    private boolean hasAmmunition() {
         for (int i = 2; i < inventory.size(); i++) {
             if (!getStack(i).isEmpty() && getStack(i).isIn(ItemTags.ARROWS)) {
                 return true;
@@ -149,6 +166,28 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
     private boolean hasBow() {
         ItemStack bow_stack = this.getStack(BOW_SLOT);
         return !bow_stack.isEmpty() && bow_stack.isIn(ConventionalItemTags.BOWS);
+    }
+
+    private void calculateEnchantments() {
+        ItemStack bow = getStack(BOW_SLOT);
+        ItemStack book = getStack(ENCHANT_SLOT);
+
+        POWER = Math.max(EnchantmentHelper.getLevel(Enchantments.POWER, bow),
+                EnchantmentHelper.get(book).get(Enchantments.POWER) != null ?
+                        EnchantmentHelper.get(book).get(Enchantments.POWER) : 0);
+
+        PUNCH = Math.max(EnchantmentHelper.getLevel(Enchantments.PUNCH, bow),
+                EnchantmentHelper.get(book).get(Enchantments.PUNCH) != null ?
+                        EnchantmentHelper.get(book).get(Enchantments.PUNCH) : 0);
+
+        FLAME = Math.max(EnchantmentHelper.getLevel(Enchantments.FLAME, bow),
+                EnchantmentHelper.get(book).get(Enchantments.FLAME) != null ?
+                        EnchantmentHelper.get(book).get(Enchantments.FLAME) : 0);
+
+        INFINITY = Math.max(EnchantmentHelper.getLevel(Enchantments.INFINITY, bow),
+                EnchantmentHelper.get(book).get(Enchantments.INFINITY) != null ?
+                        EnchantmentHelper.get(book).get(Enchantments.INFINITY) : 0) > 0;
+        markDirty();
     }
 
     @Override
@@ -166,6 +205,10 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
         nbt.putDouble("auto_turret_vb_maxX", VIEW_BOX.maxX);
         nbt.putDouble("auto_turret_vb_maxY", VIEW_BOX.maxY);
         nbt.putDouble("auto_turret_vb_maxZ", VIEW_BOX.maxZ);
+        nbt.putInt("auto_turret_power", POWER);
+        nbt.putInt("auto_turret_punch", PUNCH);
+        nbt.putInt("auto_turret_flame", FLAME);
+        nbt.putBoolean("auto_turret_infinity", INFINITY);
         if (TARGET != null) nbt.putInt("auto_turret_target_id", TARGET.getId());
         nbt.putInt("auto_turret_load", LOAD);
         super.writeNbt(nbt);
@@ -180,6 +223,10 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
         } catch (Exception err) {
             TARGET = null;
         }
+        POWER = nbt.getInt("auto_turret_power");
+        PUNCH = nbt.getInt("auto_turret_punch");
+        FLAME = nbt.getInt("auto_turret_flame");
+        INFINITY = nbt.getBoolean("auto_turret_infinity");
         VIEW_BOX = new Box(nbt.getDouble("auto_turret_vb_minX"),
                 nbt.getDouble("auto_turret_vb_minY"),
                 nbt.getDouble("auto_turret_vb_minZ"),
