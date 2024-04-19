@@ -3,27 +3,32 @@ package codes.snail.block.entity;
 import codes.snail.AutomatedDefence;
 import codes.snail.inventory.ImplementedInventory;
 import codes.snail.screen.AutoTurretLoadingScreenHandler;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.fabricmc.fabric.api.tag.convention.v1.ConventionalItemTags;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.TypeFilter;
 import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.*;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 import static codes.snail.AutomatedDefence.MOD_ID;
 
@@ -32,7 +37,18 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
             ItemStack.EMPTY);
 
     private static final int BOW_SLOT = 0;
+    private static final Vec3d BOW_POS = new Vec3d(0.5, 1.5, 0.5);
     private static final int ENCHANT_SLOT = 1;
+
+    private static final Random ARROW_DITHER = Random.create();
+
+    private static final int FULL_LOAD = 10;
+    private int LOAD = 0;
+
+    private Box VIEW_BOX;
+
+    @Nullable
+    private HostileEntity TARGET = null;
 
     public AutoTurretBlockEntity(BlockPos pos, BlockState state) {
         super (AutomatedDefence.AUTO_TURRET_BLOCK_ENTITY, pos, state);
@@ -44,9 +60,67 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
             return;
         }
 
-        if (hasAmmnunition() && hasBow()) {
-
+        if (VIEW_BOX == null) {
+            VIEW_BOX = new Box(pos.subtract(new Vec3i(16, 16, 16)),
+                    pos.add(16, 16, 16));
+            markDirty();
         }
+
+        if (hasAmmnunition() && hasBow()) {
+            if (TARGET == null) {
+                Random random = Random.create();
+                List<HostileEntity> nearbyEntities =
+                        world.getEntitiesByType(TypeFilter.instanceOf(HostileEntity.class), VIEW_BOX, EntityPredicates.VALID_ENTITY);
+                if (!nearbyEntities.isEmpty()) {
+                    TARGET =
+                            nearbyEntities.get(random.nextInt(nearbyEntities.size()));
+                }
+                markDirty();
+                return;
+            }
+            if (!TARGET.getPos().isInRange(pos.toCenterPos(), 16) || TARGET.isDead()) {
+                TARGET = null;
+                return;
+            }
+            LOAD += 1;
+            if (LOAD >= FULL_LOAD) {
+                ItemStack arrows = getArrowFromInventory();
+                ArrowEntity arrow = new ArrowEntity(world,
+                        pos.getX() + BOW_POS.getX(),
+                        pos.getY() + BOW_POS.getY(),
+                        pos.getZ() + BOW_POS.getZ());
+                arrow.initFromStack(arrows);
+                arrow.pickupType =
+                        PersistentProjectileEntity.PickupPermission.CREATIVE_ONLY;
+                Vec3d velocity =
+                        (pos.toCenterPos().add(BOW_POS)
+                                .subtract(TARGET.getX(),
+                                TARGET.getY()+TARGET.getEyeY(),
+                                TARGET.getZ())
+                        ).add(
+                                MathHelper.nextBetween(ARROW_DITHER, -0.25f, 0.25f),
+                                MathHelper.nextBetween(ARROW_DITHER, -1f, 0.5f),
+                                MathHelper.nextBetween(ARROW_DITHER, -0.25f, 0.25f)
+                        ).normalize().rotateY(MathHelper.PI).multiply(10, 0.1, 10);
+                arrow.setVelocity(velocity);
+                world.spawnEntity(arrow);
+                arrows.decrement(1);
+                LOAD = 0;
+            }
+            markDirty();
+            return;
+        }
+        TARGET = null;
+        markDirty();
+    }
+
+    private ItemStack getArrowFromInventory() {
+        for (int i = 2; i < inventory.size(); i++) {
+            if (!getStack(i).isEmpty() && getStack(i).isIn(ItemTags.ARROWS)) {
+                return getStack(i);
+            }
+        }
+        return ItemStack.EMPTY;
     }
 
     private boolean hasAmmnunition() {
@@ -72,12 +146,32 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
     @Override
     protected void writeNbt(NbtCompound nbt) {
         Inventories.writeNbt(nbt, inventory);
+        nbt.putDouble("auto_turret_vb_minX", VIEW_BOX.minX);
+        nbt.putDouble("auto_turret_vb_minY", VIEW_BOX.minY);
+        nbt.putDouble("auto_turret_vb_minZ", VIEW_BOX.minZ);
+        nbt.putDouble("auto_turret_vb_maxX", VIEW_BOX.maxX);
+        nbt.putDouble("auto_turret_vb_maxY", VIEW_BOX.maxY);
+        nbt.putDouble("auto_turret_vb_maxZ", VIEW_BOX.maxZ);
+        if (TARGET != null) nbt.putInt("auto_turret_target_id", TARGET.getId());
+        nbt.putInt("auto_turret_load", LOAD);
         super.writeNbt(nbt);
     }
 
     @Override
     public void readNbt(NbtCompound nbt) {
         super.readNbt(nbt);
+        LOAD = nbt.getInt("auto_turret_load");
+        try {
+            TARGET = (HostileEntity) world.getEntityById(nbt.getInt("auto_turret_target_id"));
+        } catch (Exception err) {
+            TARGET = null;
+        }
+        VIEW_BOX = new Box(nbt.getDouble("auto_turret_vb_minX"),
+                nbt.getDouble("auto_turret_vb_minY"),
+                nbt.getDouble("auto_turret_vb_minZ"),
+                nbt.getDouble("auto_turret_vb_maxX"),
+                nbt.getDouble("auto_turret_vb_maxY"),
+                nbt.getDouble("auto_turret_vb_maxZ"));
         Inventories.readNbt(nbt, inventory);
     }
 
