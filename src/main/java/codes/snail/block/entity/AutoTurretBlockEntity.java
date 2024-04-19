@@ -118,6 +118,7 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
                     world.spawnEntity(arrow);
                     arrows.decrement(1);
                 }
+                getStack(BOW_SLOT).damage(1, TARGET, (p) -> {});
                 LOAD = 0;
             }
             markDirty();
