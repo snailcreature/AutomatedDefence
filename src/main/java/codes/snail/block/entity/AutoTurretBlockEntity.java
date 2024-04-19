@@ -11,8 +11,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
@@ -54,8 +56,7 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
         super (AutomatedDefence.AUTO_TURRET_BLOCK_ENTITY, pos, state);
     }
 
-    public void tick(World world, BlockPos pos, BlockState state,
-                             AutoTurretBlockEntity be) {
+    public void tick(World world, BlockPos pos, BlockState state, AutoTurretBlockEntity be) {
         if (world.isClient()) {
             return;
         }
@@ -84,27 +85,39 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
             }
             LOAD += 1;
             if (LOAD >= FULL_LOAD) {
-                ItemStack arrows = getArrowFromInventory();
-                ArrowEntity arrow = new ArrowEntity(world,
-                        pos.getX() + BOW_POS.getX(),
-                        pos.getY() + BOW_POS.getY(),
-                        pos.getZ() + BOW_POS.getZ());
-                arrow.initFromStack(arrows);
-                arrow.pickupType =
-                        PersistentProjectileEntity.PickupPermission.CREATIVE_ONLY;
                 Vec3d velocity =
                         (pos.toCenterPos().add(BOW_POS)
                                 .subtract(TARGET.getX(),
-                                TARGET.getY()+TARGET.getEyeY(),
-                                TARGET.getZ())
+                                        TARGET.getY()+TARGET.getEyeY(),
+                                        TARGET.getZ())
                         ).add(
                                 MathHelper.nextBetween(ARROW_DITHER, -0.25f, 0.25f),
                                 MathHelper.nextBetween(ARROW_DITHER, -1f, 0.5f),
                                 MathHelper.nextBetween(ARROW_DITHER, -0.25f, 0.25f)
                         ).normalize().rotateY(MathHelper.PI).multiply(10, 0.1, 10);
-                arrow.setVelocity(velocity);
-                world.spawnEntity(arrow);
-                arrows.decrement(1);
+
+                ItemStack arrows = getArrowFromInventory();
+                if (arrows.isOf(Items.SPECTRAL_ARROW)) {
+                    SpectralArrowEntity arrow = new SpectralArrowEntity(world,
+                            pos.getX() + BOW_POS.getX(),
+                            pos.getY() + BOW_POS.getY(),
+                            pos.getZ() + BOW_POS.getZ());
+                    arrow.pickupType = PersistentProjectileEntity.PickupPermission.ALLOWED;
+                    arrow.setVelocity(velocity);
+                    world.spawnEntity(arrow);
+                    arrows.decrement(1);
+                }
+                else {
+                    ArrowEntity arrow = new ArrowEntity(world,
+                            pos.getX() + BOW_POS.getX(),
+                            pos.getY() + BOW_POS.getY(),
+                            pos.getZ() + BOW_POS.getZ());
+                    arrow.initFromStack(arrows);
+                    arrow.pickupType = PersistentProjectileEntity.PickupPermission.CREATIVE_ONLY;
+                    arrow.setVelocity(velocity);
+                    world.spawnEntity(arrow);
+                    arrows.decrement(1);
+                }
                 LOAD = 0;
             }
             markDirty();
