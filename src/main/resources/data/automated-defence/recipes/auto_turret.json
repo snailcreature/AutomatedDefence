@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "X",
+    "#",
+    "G"
+  ],
+  "key": {
+    "X": {
+      "item": "minecraft:dispenser"
+    },
+    "#": {
+      "item": "minecraft:armor_stand"
+    },
+    "G": {
+      "item": "minecraft:grindstone"
+    }
+  },
+  "result": {
+    "item": "automated-defence:auto_turret",
+    "count": 1
+  }
+}
