@@ -54,3 +54,4 @@ jobs:
         with:
           files: build/libs/Artifacts/automated-defence-${{ env.MOD_VERSION }}
           name: AutomatedDefence-${{ env.MOD_VERSION }}-1.0.0
+          tag: v${{ env.MINECRAFT_VERSION }}-${{ env.MOD_VERSION }}
