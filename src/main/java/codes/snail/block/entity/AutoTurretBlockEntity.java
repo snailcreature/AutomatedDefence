@@ -21,6 +21,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.screen.NamedScreenHandlerFactory;
@@ -58,7 +59,7 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
     private Box VIEW_BOX;
 
     @Nullable
-    private HostileEntity TARGET = null;
+    public HostileEntity TARGET = null;
 
     public AutoTurretBlockEntity(BlockPos pos, BlockState state) {
         super (AutomatedDefence.AUTO_TURRET_BLOCK_ENTITY, pos, state);
@@ -190,6 +191,19 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
         markDirty();
     }
 
+    public ItemStack getRenderStack() {
+        if (getStack(BOW_SLOT).isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        return getStack(BOW_SLOT);
+    }
+
+    @Override
+    public void markDirty() {
+        world.updateListeners(pos, getCachedState(), getCachedState(), 3);
+        super.markDirty();
+    }
+
     @Override
     public Text getDisplayName() {
         return Text.translatable(String.format("block.%s.auto_turret",
@@ -239,12 +253,12 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
     @Nullable
     @Override
     public Packet<ClientPlayPacketListener> toUpdatePacket() {
-        return super.toUpdatePacket();
+        return BlockEntityUpdateS2CPacket.create(this);
     }
 
     @Override
     public NbtCompound toInitialChunkDataNbt() {
-        return super.toInitialChunkDataNbt();
+        return createNbt();
     }
 
     @Override

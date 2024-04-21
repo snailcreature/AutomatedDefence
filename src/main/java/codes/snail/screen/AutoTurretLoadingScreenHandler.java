@@ -21,9 +21,7 @@ public class AutoTurretLoadingScreenHandler extends ScreenHandler {
         this(syncId, playerInventory, new SimpleInventory(11));
     }
 
-    public AutoTurretLoadingScreenHandler(int syncId,
-                                          PlayerInventory playerInventory,
-                                          Inventory inventory) {
+    public AutoTurretLoadingScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
         super(AUTO_TURRET_LOADING_SCREEN_HANDLER, syncId);
         this.inventory = inventory;
         inventory.onOpen(playerInventory.player);
@@ -70,6 +68,12 @@ public class AutoTurretLoadingScreenHandler extends ScreenHandler {
     }
 
     @Override
+    public void onClosed(PlayerEntity player) {
+        super.onClosed(player);
+        inventory.markDirty();
+    }
+
+    @Override
     public boolean canUse(PlayerEntity player) {
         return this.inventory.canPlayerUse(player);
     }
@@ -78,7 +82,7 @@ public class AutoTurretLoadingScreenHandler extends ScreenHandler {
     public ItemStack quickMove(PlayerEntity player, int invSlot) {
         ItemStack newStack = ItemStack.EMPTY;
         Slot slot = this.slots.get(invSlot);
-        if (slot != null && slot.hasStack()) {
+        if (slot.hasStack()) {
             ItemStack originalStack = slot.getStack();
             newStack = originalStack.copy();
             if (invSlot < this.inventory.size()) {
