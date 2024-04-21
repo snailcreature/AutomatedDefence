@@ -64,4 +64,4 @@ jobs:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         with:
           tag_name: releaseV${{ env.MINECRAFT_VERSION }}-${{ env.MOD_VERSION }}-${{ github.run_id }}
-          files: ${{ steps.retrieve_artifacts.outputs.download-path }}/automated-defence-${{ env.MOD_VERSION }}.jar
+          files: ${{ steps.retrieve_artifacts.outputs.download-path }}/Artifacts/automated-defence-${{ env.MOD_VERSION }}.jar
