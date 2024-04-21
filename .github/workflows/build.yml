@@ -14,6 +14,12 @@ on:
       - main
       - master
 
+env:
+  MINECRAFT_VERSION: 1.20.1
+  MOD_VERSION: 1.0.0
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
 jobs:
   build:
     strategy:
@@ -37,10 +43,25 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build
-        run: ./gradlew build
+        run: ./gradlew clean build
       - name: capture build artifacts
+        id: capture_artifacts
         if: ${{ matrix.java == '21' }} # Only upload artifacts built from latest java
         uses: actions/upload-artifact@v4
         with:
           name: Artifacts
           path: build/libs/
+      - name: Retrieve artifacts
+        id: retrieve_artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build
+      - name: Directory check
+        run: ls -a ${{ steps.retrieve_artifacts.outputs.download-path }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.0.4
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        with:
+          tag_name: releaseV${{ env.MINECRAFT_VERSION }}-${{ env.MOD_VERSION }}-${{ github.run_id }}
+          files: ${{ steps.retrieve_artifacts.outputs.download-path }}/Artifacts/automated-defence-${{ env.MOD_VERSION }}.jar
