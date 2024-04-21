@@ -49,11 +49,8 @@ jobs:
         with:
           name: Artifacts
           path: build/libs/
-      - name: Auto-version
-        id: versioning
-        uses: Soumeh/Auto-Versioning@main
       - name: Create Release
         uses: softprops/action-gh-release@v2.0.4
         with:
           files: build/libs/Artifacts/automated-defence-${{ env.MOD_VERSION }}
-          name: AutomatedDefence-${{ env.MOD_VERSION }}-${{ steps.versioning.outputs.tag }}
+          name: AutomatedDefence-${{ env.MOD_VERSION }}-1.0.0
