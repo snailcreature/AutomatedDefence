@@ -56,6 +56,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: build
+      - name: Directory check
+        run: ls -a ${{ steps.retrieve_artifacts.outputs.download-path }}
       - name: Create Release
         uses: softprops/action-gh-release@v2.0.4
         env:
