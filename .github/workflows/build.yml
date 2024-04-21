@@ -51,10 +51,15 @@ jobs:
         with:
           name: Artifacts
           path: build/libs/
+      - name: Retrieve artifacts
+        id: retrieve_artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ GITHUB_WORKSPACE }}/build
       - name: Create Release
         uses: softprops/action-gh-release@v2.0.4
         env:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         with:
           tag_name: releaseV${{ env.MINECRAFT_VERSION }}-${{ env.MOD_VERSION }}-${{ github.run_id }}
-          files: ${{ steps.capture_artifacts.outputs.artifact-url }}
+          files: ${{ steps.retrieve_artifacts.outputs.download-path }}/automated-defence-${{ env.MOD_VERSION }}.jar
