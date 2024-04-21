@@ -15,7 +15,6 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.inventory.Inventories;
-import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -46,10 +45,10 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
     private static final Vec3d BOW_POS = new Vec3d(0.5, 1.5, 0.5);
 
     private static final int ENCHANT_SLOT = 1;
-    private int POWER;
-    private int PUNCH;
-    private int FLAME;
-    private boolean INFINITY;
+    private int POWER = 0;
+    private int PUNCH = 0;
+    private int FLAME = 0;
+    private boolean INFINITY = false;
 
     private static final Random ARROW_DITHER = Random.create();
 
@@ -213,12 +212,14 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
     @Override
     protected void writeNbt(NbtCompound nbt) {
         Inventories.writeNbt(nbt, inventory);
-        nbt.putDouble("auto_turret_vb_minX", VIEW_BOX.minX);
-        nbt.putDouble("auto_turret_vb_minY", VIEW_BOX.minY);
-        nbt.putDouble("auto_turret_vb_minZ", VIEW_BOX.minZ);
-        nbt.putDouble("auto_turret_vb_maxX", VIEW_BOX.maxX);
-        nbt.putDouble("auto_turret_vb_maxY", VIEW_BOX.maxY);
-        nbt.putDouble("auto_turret_vb_maxZ", VIEW_BOX.maxZ);
+        if (VIEW_BOX != null) {
+            nbt.putDouble("auto_turret_vb_minX", VIEW_BOX.minX);
+            nbt.putDouble("auto_turret_vb_minY", VIEW_BOX.minY);
+            nbt.putDouble("auto_turret_vb_minZ", VIEW_BOX.minZ);
+            nbt.putDouble("auto_turret_vb_maxX", VIEW_BOX.maxX);
+            nbt.putDouble("auto_turret_vb_maxY", VIEW_BOX.maxY);
+            nbt.putDouble("auto_turret_vb_maxZ", VIEW_BOX.maxZ);
+        }
         nbt.putInt("auto_turret_power", POWER);
         nbt.putInt("auto_turret_punch", PUNCH);
         nbt.putInt("auto_turret_flame", FLAME);
@@ -241,12 +242,16 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
         PUNCH = nbt.getInt("auto_turret_punch");
         FLAME = nbt.getInt("auto_turret_flame");
         INFINITY = nbt.getBoolean("auto_turret_infinity");
-        VIEW_BOX = new Box(nbt.getDouble("auto_turret_vb_minX"),
-                nbt.getDouble("auto_turret_vb_minY"),
-                nbt.getDouble("auto_turret_vb_minZ"),
-                nbt.getDouble("auto_turret_vb_maxX"),
-                nbt.getDouble("auto_turret_vb_maxY"),
-                nbt.getDouble("auto_turret_vb_maxZ"));
+        try {
+            VIEW_BOX = new Box(nbt.getDouble("auto_turret_vb_minX"),
+                    nbt.getDouble("auto_turret_vb_minY"),
+                    nbt.getDouble("auto_turret_vb_minZ"),
+                    nbt.getDouble("auto_turret_vb_maxX"),
+                    nbt.getDouble("auto_turret_vb_maxY"),
+                    nbt.getDouble("auto_turret_vb_maxZ"));
+        } catch (Exception err) {
+            VIEW_BOX = null;
+        }
         Inventories.readNbt(nbt, inventory);
     }
 
