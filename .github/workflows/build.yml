@@ -56,4 +56,4 @@ jobs:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         with:
           tag_name: releaseV${{ env.MINECRAFT_VERSION }}-${{ env.MOD_VERSION }}-${{ github.run_id }}
-          files: ./build/libs/Artifacts
+          files: /build/libs/Artifacts.zip
