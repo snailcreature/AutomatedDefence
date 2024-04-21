@@ -15,6 +15,7 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.SpectralArrowEntity;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -37,7 +38,7 @@ import java.util.List;
 
 import static codes.snail.AutomatedDefence.MOD_ID;
 
-public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHandlerFactory, ImplementedInventory {
+public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHandlerFactory, ImplementedInventory, SidedInventory {
     private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(11,
             ItemStack.EMPTY);
 
@@ -277,5 +278,32 @@ public class AutoTurretBlockEntity extends BlockEntity implements NamedScreenHan
                                      PlayerInventory playerInventory, PlayerEntity player) {
         return new AutoTurretLoadingScreenHandler(syncId, playerInventory,
                 this);
+    }
+
+    @Override
+    public int[] getAvailableSlots(Direction side) {
+        int[] res = new int[getItems().size()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = i;
+        }
+        return res;
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
+        if (dir == Direction.UP) {
+            return false;
+        }
+
+        return switch (slot) {
+            case BOW_SLOT -> stack.isIn(ConventionalItemTags.BOWS);
+            case ENCHANT_SLOT -> stack.isOf(Items.ENCHANTED_BOOK);
+            default -> stack.isIn(ItemTags.ARROWS);
+        };
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, Direction dir) {
+        return dir != Direction.UP && slot != ENCHANT_SLOT;
     }
 }
