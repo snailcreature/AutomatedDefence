@@ -55,7 +55,7 @@ jobs:
         id: retrieve_artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ${{ github.workspace }}/build
+          path: build
       - name: Create Release
         uses: softprops/action-gh-release@v2.0.4
         env:
